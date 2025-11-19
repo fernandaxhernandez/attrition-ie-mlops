@@ -72,11 +72,10 @@ METRICS_PATH = ROOT_DIR / ARTIFACTS_CFG["metrics_path"]
 
 
 # Data loading
+
+#We start by reading the satasets we will be working with, 
+#and the function returns both datasets as dataframes
 def read_raw_data() -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """
-    Read raw CSV files for IBM and Industry datasets.
-    Paths come from configs/train.yaml.
-    """
     ibm = pd.read_csv(IBM_PATH)
     industry = pd.read_csv(INDUSTRY_PATH)
     return ibm, industry
@@ -130,6 +129,8 @@ def build_dataset() -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
         }
     )
 
+    #After that, we keep only the common columns in both datasets, to make sure 
+    #that both datasets will be interpretable in the correct way by the model.
     common_cols = [
         "Age",
         "Gender",
@@ -149,6 +150,8 @@ def build_dataset() -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
     ibm_common = ibm[[c for c in common_cols if c in ibm.columns]].copy()
     industry_common = industry[[c for c in common_cols if c in industry.columns]].copy()
 
+    #Then, we create an AttritionFlag binary column for both datasets, it will act as 
+    #out prediction target.
     for df in (ibm_common, industry_common):
         if "Attrition" in df.columns:
             df["Attrition"] = (
@@ -346,6 +349,10 @@ def build_dataset() -> Tuple[pd.DataFrame, pd.Series, pd.DataFrame]:
     ibm_common["Source"] = "Company"
     industry_common["Source"] = "Industry"
 
+
+    #Now that we have executed these transformations to make sure that the model 
+    #will be able to learn from patterns observed both inside the company and in 
+    #the whole industry, we merge both datasets for future use.
     df_all = pd.concat([ibm_common, industry_common], ignore_index=True)
     print(f"Merged dataset including rows: {len(df_all)}, columns: {df_all.shape[1]}")
     print(df_all.head())
@@ -388,6 +395,12 @@ def create_pr_curve_figure(y_true, y_proba, title="Precision–Recall Curve"):
 def train_and_evaluate():
     X, y, df_all = build_dataset()
 
+    #Divide train/test. By comparing the performance of the model using two 
+    #different strategies (K-fold and classic 80/20) for the creation of the 
+    #train/test split, we came to the conclusion that a classic train/test 
+    #split would allow us to explore a baseline and then reintroduce k-fold 
+    #cross validation if needed.
+    
     # Classic 80/20 split
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -407,6 +420,14 @@ def train_and_evaluate():
         print("\nType of Source in test:")
         print(X_test["Source"].value_counts())
 
+    
+    #We then create a transformation pipeline based on the adjusts we wish to 
+    #perform on each kind of variable. In this case, for numeric variables we 
+    #impute null values with the median and use a Standard scaler to make sure 
+    #all numerical features have the same level of consideration when training 
+    #the model. On the other hand, for the categorical faviables we impute null 
+    #values with the most frequent value (mode), and use OneHotEncoding.
+    
     # Make sure the types for each column is correctly updated
     num_cols = [
         "Age",
