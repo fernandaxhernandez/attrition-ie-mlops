@@ -1,25 +1,32 @@
+#This file will alow us to define configurations, parameters and data paths, so it
+#acts as a set of instructions for our program. When train.py reads this document, 
+#it will be able to understand how to perform the steps it must take.
+
+#This defines the paths where the datasets are found.
 data:
   ibm_path: "data/IBM_HR-Employee-Attrition.csv"
   industry_path: "data/Industry Dataset.csv"
-
+#Then, we define where the results from the training process have to be stored.
 artifacts:
   model_path: "attrition/xgb_attrition_pipeline.joblib"
   metrics_path: "attrition/metrics.json"
-
+#Once we have gone through these definitions, it is important to define how the dataset
+#will be split  for training/testing. After testing classic 80/20 split and k-folds cross
+#validation, we decided to use an 80/20 train test split.
 training:
   test_size: 0.2
   random_state: 42
   stratify: true
-
+#Then, we define the hyperparameters used by the XGBoost model.
 model:
-  objective: "binary:logistic"
-  eval_metric: "auc"
-  n_estimators: 400
-  learning_rate: 0.05
-  max_depth: 5
-  subsample: 0.8
-  colsample_bytree: 0.8
-
+  objective: "binary:logistic" #Our problem is binary, which means a classification approach will be used.
+  eval_metric: "auc" #Metric used for optimiztion.
+  n_estimators: 400 #Amount of trees used.
+  learning_rate: 0.05 #Learning rateused by the model
+  max_depth: 5 #Max depth per each tree
+  subsample: 0.8 #Regularization
+  colsample_bytree: 0.8 #Regularization
+#Finally, we configure the intgration with MLflow.
 mlflow:
   enabled: true
   tracking_uri: "file:./mlruns"
